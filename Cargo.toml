@@ -1,0 +1,23 @@
+[package]
+name = "sq-ssh-tool"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.5.37", features = ["derive"] }
+rpassword = "7.4.0"
+sequoia-openpgp = { version = "2.0.0", default-features = false, features = ["compression"] }
+ssh-key = { version = "0.6.7", features = ["encryption", "alloc"] }
+ssh-encoding = "0.2.0"
+
+[features]
+default = [
+    "crypto-nettle",
+]
+crypto-nettle = ["sequoia-openpgp/crypto-nettle"]
+crypto-openssl = ["sequoia-openpgp/crypto-openssl"]
+crypto-botan = ["sequoia-openpgp/crypto-botan"]
+crypto-botan2 = ["sequoia-openpgp/crypto-botan2"]
+crypto-cng = ["sequoia-openpgp/crypto-cng"]
+crypto-rust = ["sequoia-openpgp/crypto-rust"]
