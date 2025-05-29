@@ -1,0 +1,12 @@
+[package]
+name = "sq-ssh-tool"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = "4.5.37"
+rpassword = "7.4.0"
+sequoia-openpgp = { version = "2.0.0", default-features = false, features = ["crypto-cng", "compression"] }
+ssh-key = { version = "0.6.7", features = ["encryption", "alloc"] }
+ssh-encoding = "0.2.0"
+#ssh-key = { version = "=0.7.0-pre.1", features = ["encryption", "alloc"] }
