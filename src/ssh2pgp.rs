@@ -108,16 +108,24 @@ fn try_ssh_keypair_data_into_pgp_key(
     pgp_v6: bool,
 ) -> Result<PgpKey<PgpKeySecretParts, PgpKeyUnspecifiedRole>, ()> {
     match (ssh_keypair_data, pgp_v6) {
-        // Handling v6 edge cases
+        // NOTE: v4 Ed25519 keys use special types on top of ECDSA ("Ed25519Legacy")
+        // Techically, v6 applications shouldn't support this, but sometimes it
+        // slips through the cracks.
+        // TODO: Report missing error:
+        // Using "Ed25519Legacy" (sequoia_openpgp::crypto::Curve::Ed25519) with
+        // sequoia_openpgp::packet::key::Key6::with_secret should result in an error.
         (SshKeypairData::Ed25519(key), true) => {
-            // Ed25519 v6 Keys are very different from Ed25519 v4 Keys
             PgpKey6::<PgpKeySecretParts, PgpKeyUnspecifiedRole>::import_secret_ed25519(
                 key.private.as_ref(),
                 pgp_ctime
             ).map_err(|_| ()).map(PgpKey::from)
         },
+        // NOTE: v6 sigs can't use DSA. There's no way to create a valid
+        // key/cert without signatures (subkeys still use backsigs).
+        // TODO: Report missing error:
+        // Using sequoia_openpgp::crypto::mpi::PublicKey::DSA as pk_algo for
+        // sequoia_openpgp::packet::key::Key6::with_secret should result in an error
         (SshKeypairData::Dsa(_), true) => {
-            // DSA isn't supported by PGP v6
             Err(())
         },
         (_, _) => {
@@ -162,11 +170,13 @@ fn make_pgp_cert(
     // - {Public,Private}-Key Packet
     // - Signature Packet (DirectKey)
     // -- Key flags: CA
-    // - User ID Packet
-    // - Signature Packet (PositiveCertification)
+    // - User ID Packet (if pgp_userid)
+    // - Signature Packet (PositiveCertification) (if pgp_userid)
     // -- Primary User ID: true
 
-    // GnuPG will still accept this cert.
+    // The link between the UserID and the Key is more explicit in the second one
+    // and can be modified without rebuilding the entire cert. GnuPG will still
+    // accept this cert, but it should only be used to attach it to your main cert.
 
     let pgp_primary_key = pgp_key.role_into_primary();
 
@@ -233,23 +243,9 @@ pub fn ssh2pgp(
         return Err(());
     }
 
-    let pgp_userid = match pgp_userid {
-        Some(uid) => {
-            if uid.value().is_empty() {
-                None
-            } else {
-                Some(uid)
-            }
-        },
-        None => {
-            let ssh_comment = ssh_private_key.comment();
-            if ssh_comment.is_empty() {
-                None
-            } else {
-                Some(PgpUserID::from(ssh_private_key.comment()))
-            }
-        },
-    };
+    let pgp_userid = pgp_userid.or_else(|| {
+        Some(PgpUserID::from(ssh_private_key.comment()))
+    }).filter(|uid| !uid.value().is_empty());
 
     let pgp_key = try_ssh_keypair_data_into_pgp_key(
         ssh_private_key.key_data(),

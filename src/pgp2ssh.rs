@@ -281,8 +281,9 @@ pub fn pgp2ssh(
     pgp_ignore_auth_flag: bool,
     ssh_comment: Option<&str>,
 ) -> Result<SshPrivateKey, ()> {
+    // We aren't validating the PGP cert. Our only goal is to extract
+    // data.
 
-    // We are validating nothing
     let p = unsafe { PgpNullPolicy::new() };
     let pgp_valid_cert = pgp_cert.with_policy(&p, None).map_err(|_| ())?;
 

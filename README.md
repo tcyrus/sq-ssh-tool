@@ -2,11 +2,9 @@
 
 ### Note
 
-This is a work in progress.
+This is a work in progress. The output seems to have some variation (probably due to some encoding quirks + sequoia signature salts), but the public key of a round trip conversion appears to match.
 
 You can attach the converted key to your existing primary key / cert using either [GnuPG](https://security.stackexchange.com/a/160847) or [Sequoia](https://book.sequoia-pgp.org/sq_subkey.html#generating-new-subkeys).
-
-`pgp2ssh` will take a bit longer.
 
 
 ## `ssh2pgp`
