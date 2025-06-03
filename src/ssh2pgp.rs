@@ -208,6 +208,7 @@ fn make_pgp_cert(
 
     acc.push(signature.into());
 
+    // NOTE: While having no UserId is techically valid, some tools might reject the cert.
     if let Some(pgp_userid) = pgp_userid {
         // Add UserID
         acc.push(PgpPacket::from(pgp_userid.clone()));

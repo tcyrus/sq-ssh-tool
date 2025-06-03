@@ -92,10 +92,7 @@ fn try_pgp_pubkey_into_ssh_keydata(
             }
         },
         pgpmpi::PublicKey::Ed25519 { a } => {
-            let a = &a[..sshpublic::Ed25519PublicKey::BYTE_SIZE];
-            <[u8; sshpublic::Ed25519PublicKey::BYTE_SIZE]>::try_from(a).ok().map(|p| {
-                sshpublic::Ed25519PublicKey(p)
-            }).map(SshKeyData::from)
+            Some(SshKeyData::from(sshpublic::Ed25519PublicKey(*a)))
         },
         pgpmpi::PublicKey::RSA { e, n } => {
             match (

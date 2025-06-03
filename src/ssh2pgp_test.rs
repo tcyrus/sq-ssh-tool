@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use std::time::{SystemTime, Duration};
 
 use ssh_key;
 use ssh_key::PrivateKey as SshPrivateKey;
@@ -11,31 +11,21 @@ use openpgp::serialize::SerializeInto;
 use crate::ssh2pgp::ssh2pgp;
 
 /// Ed25519 OpenSSH-formatted private key
-const OPENSSH_ED25519_EXAMPLE: &str = include_str!("../tests/examples/id_ed25519");
-
-const PGP_UNIX_EPOCH: SystemTime = SystemTime::UNIX_EPOCH;
+const OPENSSH_RFC9580_A4: &str = include_str!("../tests/examples/rfc9580_a4.pem");
 
 #[test]
 fn test_v4() {
-    let ssh_private_key = SshPrivateKey::from_openssh(OPENSSH_ED25519_EXAMPLE).expect("SSH Key should be parsed");
-
-    // TODO: Properly map out errors and stuff
-    /*
-    let ssh_private_key = if ssh_private_key.is_encrypted() {
-        let password = rpassword::prompt_password("Please enter the SSH Key Password");
-        password.ok().and_then(|pass| ssh_private_key.decrypt(pass).ok()).expect("SSH Key should be decrypted")
-    } else {
-        ssh_private_key
-    };
-    */
+    let ssh_private_key = SshPrivateKey::from_openssh(OPENSSH_RFC9580_A4).expect("SSH Key should be parsed");
 
     assert!(!ssh_private_key.is_encrypted(), "SSH Key is not decrypted");
 
     // Key attributes
     assert_eq!(ssh_private_key.algorithm(), ssh_key::Algorithm::Ed25519);
-    assert_eq!(ssh_private_key.comment(), "user@example.com");
+    assert!(ssh_private_key.comment().is_empty());
 
-    let pgp_cert = ssh2pgp(&ssh_private_key, None, Some(PGP_UNIX_EPOCH), false).expect("SSH Key should be converted");
+    let ctime = SystemTime::UNIX_EPOCH.checked_add(Duration::from_secs(1669824483));
+
+    let pgp_cert = ssh2pgp(&ssh_private_key, Some("user@example.com".into()), ctime, false).expect("SSH Key should be converted");
 
     let pgp_cert_str = String::from_utf8(pgp_cert.as_tsk().armored().to_vec().unwrap()).unwrap();
 
@@ -47,14 +37,16 @@ fn test_v4() {
 
 #[test]
 fn test_v6() {
-    let ssh_private_key = SshPrivateKey::from_openssh(OPENSSH_ED25519_EXAMPLE).expect("SSH Key should be parsed");
+    let ssh_private_key = SshPrivateKey::from_openssh(OPENSSH_RFC9580_A4).expect("SSH Key should be parsed");
 
     assert!(!ssh_private_key.is_encrypted(), "SSH Key is not decrypted");
 
     assert_eq!(ssh_private_key.algorithm(), ssh_key::Algorithm::Ed25519);
-    assert_eq!(ssh_private_key.comment(), "user@example.com");
+    assert!(ssh_private_key.comment().is_empty());
 
-    let pgp_cert = ssh2pgp(&ssh_private_key, None, Some(PGP_UNIX_EPOCH), true).expect("SSH Key should be converted");
+    let ctime = SystemTime::UNIX_EPOCH.checked_add(Duration::from_secs(1669824483));
+
+    let pgp_cert = ssh2pgp(&ssh_private_key, Some("user@example.com".into()), ctime, true).expect("SSH Key should be converted");
 
     let pgp_cert_str = String::from_utf8(pgp_cert.as_tsk().armored().to_vec().unwrap()).unwrap();
 
