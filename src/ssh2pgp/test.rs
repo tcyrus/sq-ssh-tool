@@ -6,12 +6,10 @@ use ssh_key::PrivateKey as SshPrivateKey;
 use sequoia_openpgp as openpgp;
 use openpgp::serialize::SerializeInto;
 
-//use rpassword;
-
 use crate::ssh2pgp::ssh2pgp;
 
 /// Ed25519 OpenSSH-formatted private key
-const OPENSSH_RFC9580_A4: &str = include_str!("../tests/examples/rfc9580_a4.pem");
+const OPENSSH_RFC9580_A4: &str = include_str!("../../tests/examples/rfc9580_a4.pem");
 
 #[test]
 fn test_v4() {

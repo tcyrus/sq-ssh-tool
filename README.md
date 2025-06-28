@@ -2,7 +2,7 @@
 
 ### Note
 
-This is a work in progress. The output seems to have some variation (probably due to some encoding quirks + sequoia signature salts), but the public key of a round trip conversion appears to match.
+This is a work in progress. The output seems to have some variation (encoding quirks + sequoia signature salts), but the public key of a round trip conversion matches.
 
 You can attach the converted key to your existing primary key / cert using either [GnuPG](https://security.stackexchange.com/a/160847) or [Sequoia](https://book.sequoia-pgp.org/sq_subkey.html#generating-new-subkeys).
 
@@ -10,7 +10,7 @@ You can attach the converted key to your existing primary key / cert using eithe
 ## `ssh2pgp`
 
 ```
-sq-ssh-tool ssh2pgp
+sq-ssh-tool ssh2pgp sec
 ./id_ed25519
 --userid="Alice <alice@example.org>"
 [--v6]
@@ -33,7 +33,7 @@ UserID:
 ## `pgp2ssh`
 
 ```
-sq-ssh-tool pgp2ssh
+sq-ssh-tool pgp2ssh sec
 ./alice-secret.pgp
 --key=0D45C6A756A038670FDFD85CB1C82E8D27DB23A1
 [--ignore-auth-check]
@@ -84,9 +84,6 @@ Converting between the two seems to work. The main difference is that OpenPGP us
 
 The only reason that converting between these formats is working right now is because `ssh_key::Mpint` and `sequoia_openpgp::crypto::mpi::MPI` are storing values after decoding them (with the exception of some weird point stuff).
 
-`ssh_key::Mpint` uses `num_bigint_dig::BigUint` (not `num_bigint_dig::BigInt`) instead of `crypto_bigint::BoxedUint` (there is no `crypto_bigint::BoxedInt`).
-
 Some suggestions:
-- For `sequoia_openpgp::crypto::mpi::PublicKey::EdDSA { q }`, use `elliptic_curve::sec1::EncodedPoint` instead of `sequoia_openpgp::crypto::mpi::MPI`
-- Create `crypto_bigint::BoxedInt` struct
-- Consider using `KeyParts` traits (like `sequoia_openpgp::packet::key::Key`)
+- Consider replacing `sequoia_openpgp::crypto::mpi::MPI` with `elliptic_curve::sec1::EncodedPoint` where appropriate (e.g. `sequoia_openpgp::crypto::mpi::PublicKey::EdDSA { q }`)
+- Consider replacing `ssh_key::private::PrivateKey` and `ssh_key::public::PublicKey` with a unified struct (e.g. `ssh_key::Key<P: KeyParts>`) like `sequoia_openpgp::packet::key::Key`
